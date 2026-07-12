@@ -120,10 +120,11 @@ export default function Leaderboard() {
                     <div className="absolute -top-6 bg-surface-dim border-2 border-on-surface w-12 h-12 rounded-full flex items-center justify-center neubrutalist-shadow z-10">
                       <span className="font-title text-on-surface font-bold" style={{ fontSize: '20px' }}>2</span>
                     </div>
-                    <div className="w-16 h-16 rounded-full border-2 border-on-surface overflow-hidden mb-3">
+                    <div className="w-16 h-16 rounded-full border-2 border-on-surface overflow-hidden mb-2">
                       <img src={PODIUM_AVATARS[2]} alt="Cat avatar" className="w-full h-full object-cover" />
                     </div>
-                    <p className="font-title text-primary mt-auto font-bold" style={{ fontSize: '22px' }}>{top3[1].score.toLocaleString()}</p>
+                    <p className="font-title text-primary font-bold" style={{ fontSize: '22px' }}>{top3[1].score.toLocaleString()}</p>
+                    <p className="font-label text-on-surface-variant mt-1" style={{ fontSize: '10px' }}>{formatDate(top3[1].date)}</p>
                   </div>
                 )}
                 {/* Rank 1 (Gold) — Rocket */}
@@ -133,10 +134,11 @@ export default function Leaderboard() {
                     <div className="absolute -top-8 bg-primary border-2 border-on-surface w-16 h-16 rounded-full flex items-center justify-center neubrutalist-shadow z-10">
                       <span className="material-symbols-outlined text-on-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
                     </div>
-                    <div className="w-20 h-20 rounded-full border-2 border-on-surface overflow-hidden mb-3 bg-surface">
+                    <div className="w-20 h-20 rounded-full border-2 border-on-surface overflow-hidden mb-2 bg-surface">
                       <img src={PODIUM_AVATARS[1]} alt="Rocket avatar" className="w-full h-full object-cover" />
                     </div>
-                    <p className="font-headline text-on-primary-container mt-auto font-bold" style={{ fontSize: '28px' }}>{top3[0].score.toLocaleString()}</p>
+                    <p className="font-headline text-on-primary-container font-bold" style={{ fontSize: '28px' }}>{top3[0].score.toLocaleString()}</p>
+                    <p className="font-label text-on-primary-container mt-1" style={{ fontSize: '10px' }}>{formatDate(top3[0].date)}</p>
                   </div>
                 )}
                 {/* Rank 3 (Bronze) — Pizza */}
@@ -146,10 +148,11 @@ export default function Leaderboard() {
                     <div className="absolute -top-6 bg-secondary border-2 border-on-surface w-12 h-12 rounded-full flex items-center justify-center neubrutalist-shadow z-10">
                       <span className="font-title text-on-secondary font-bold" style={{ fontSize: '20px' }}>3</span>
                     </div>
-                    <div className="w-14 h-14 rounded-full border-2 border-on-surface overflow-hidden mb-3">
+                    <div className="w-14 h-14 rounded-full border-2 border-on-surface overflow-hidden mb-2">
                       <img src={PODIUM_AVATARS[3]} alt="Pizza avatar" className="w-full h-full object-cover" />
                     </div>
-                    <p className="font-title text-primary mt-auto font-bold" style={{ fontSize: '18px' }}>{top3[2].score.toLocaleString()}</p>
+                    <p className="font-title text-primary font-bold" style={{ fontSize: '18px' }}>{top3[2].score.toLocaleString()}</p>
+                    <p className="font-label text-on-surface-variant mt-1" style={{ fontSize: '10px' }}>{formatDate(top3[2].date)}</p>
                   </div>
                 )}
               </div>
