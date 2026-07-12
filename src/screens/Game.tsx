@@ -110,6 +110,24 @@ export default function Game() {
     pointerEnter(row, col);
   };
 
+  // Touch drag: on touch devices, onPointerEnter doesn't fire as the finger
+  // moves across elements. We use touchMove + elementFromPoint to detect which
+  // tile is under the finger.
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || isBlocked) return;
+    e.preventDefault();
+    resetInactivity();
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    const tileEl = el.closest('[data-row][data-col]') as HTMLElement | null;
+    if (tileEl) {
+      const row = parseInt(tileEl.dataset.row!, 10);
+      const col = parseInt(tileEl.dataset.col!, 10);
+      pointerEnter(row, col);
+    }
+  };
+
   const handlePointerUp = () => {
     if (!isDragging || isBlocked) return;
     pointerUp();
@@ -206,6 +224,7 @@ export default function Game() {
           className="relative w-full max-w-[340px] aspect-square bg-surface-container-highest border-2 border-on-surface rounded-xl p-1 neo-shadow-sm"
           onPointerUp={handlePointerUp}
           onPointerLeave={() => { if (isDragging) handlePointerUp(); }}
+          onTouchMove={handleTouchMove}
         >
           {/* SVG Drag Path */}
           <svg className="drag-path" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -225,6 +244,8 @@ export default function Game() {
                   <div
                     key={`${r}-${c}`}
                     ref={(el) => { if (el) tileRefs.current.set(`${r},${c}`, el); }}
+                    data-row={r}
+                    data-col={c}
                     className="border-2 border-on-surface rounded-lg flex items-center justify-center neo-shadow transition-colors cursor-pointer"
                     onPointerDown={(e) => {
                       e.preventDefault();
