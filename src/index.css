@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+/* ─── Neubrutalist Design Tokens (Tailwind v4 @theme) ─── */
+@theme {
+  /* Colors — ported from DESIGN.md + mockup tailwind.config */
+  --color-surface: #fbf9f4;
+  --color-surface-dim: #dbdad5;
+  --color-surface-bright: #fbf9f4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3ee;
+  --color-surface-container: #efeee9;
+  --color-surface-container-high: #eae8e3;
+  --color-surface-container-highest: #e4e2de;
+  --color-on-surface: #1b1c19;
+  --color-on-surface-variant: #484739;
+  --color-inverse-surface: #30312e;
+  --color-inverse-on-surface: #f2f1ec;
+  --color-outline: #797867;
+  --color-outline-variant: #cac7b4;
+  --color-surface-tint: #616207;
+  --color-primary: #616207;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #fdfd96;
+  --color-on-primary-container: #74751d;
+  --color-inverse-primary: #cbcb6a;
+  --color-secondary: #78555e;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ffd1dc;
+  --color-on-secondary-container: #7a5761;
+  --color-tertiary: #326940;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #e3ffe2;
+  --color-on-tertiary-container: #467d51;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #e8e883;
+  --color-primary-fixed-dim: #cbcb6a;
+  --color-on-primary-fixed: #1d1d00;
+  --color-on-primary-fixed-variant: #494900;
+  --color-secondary-fixed: #ffd9e2;
+  --color-secondary-fixed-dim: #e7bbc6;
+  --color-on-secondary-fixed: #2d141c;
+  --color-on-secondary-fixed-variant: #5e3e47;
+  --color-tertiary-fixed: #b5f1bc;
+  --color-tertiary-fixed-dim: #99d4a1;
+  --color-on-tertiary-fixed: #00210b;
+  --color-on-tertiary-fixed-variant: #18512a;
+  --color-background: #fbf9f4;
+  --color-on-background: #1b1c19;
+  --color-surface-variant: #e4e2de;
+
+  /* Spacing — avoid overriding Tailwind's built-in sm/md/lg/xl scale values */
+  --spacing-unit: 4px;
+  --spacing-gutter: 12px;
+  --spacing-edge: 20px;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Font families — Fredoka for display, Work Sans for body/label */
+  --font-display: "Fredoka", sans-serif;
+  --font-headline: "Fredoka", sans-serif;
+  --font-title: "Fredoka", sans-serif;
+  --font-body: "Fredoka", sans-serif;
+  --font-label: "Work Sans", sans-serif;
+
+  /* Font sizes */
+  --text-display-xl: 48px;
+  --text-headline-lg: 32px;
+  --text-headline-lg-mobile: 28px;
+  --text-title-md: 20px;
+  --text-body-lg: 18px;
+  --text-body-md: 16px;
+  --text-label-bold: 14px;
+}
+
+/* ─── Base ─── */
+html, body, #root {
+  min-height: 100dvh;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ─── Neubrutalist Shadow Utilities ─── */
+.neubrutalist-shadow {
+  box-shadow: 4px 4px 0px 0px #1A1A1A;
+}
+.neubrutalist-shadow-lg {
+  box-shadow: 6px 6px 0px 0px #1A1A1A;
+}
+.neubrutalist-shadow-sm {
+  box-shadow: 2px 2px 0px 0px #1A1A1A;
+}
+.neubrutalist-shadow-inset {
+  box-shadow: inset 2px 2px 0px 0px rgba(26,26,26,1);
+}
+
+/* Game screen shadow variants */
+.neo-shadow {
+  box-shadow: 4px 4px 0px 0px #1A1A1A;
+}
+.neo-shadow-active {
+  box-shadow: 6px 6px 0px 0px #1A1A1A;
+  transform: translate(-2px, -2px);
+}
+.neo-shadow-pressed {
+  box-shadow: 0px 0px 0px 0px #1A1A1A;
+  transform: translate(4px, 4px);
+}
+.neo-shadow-sm {
+  box-shadow: 2px 2px 0px 0px #1A1A1A;
+}
+
+/* ─── Tactile Button ─── */
+.tactile-btn {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  border: 2px solid #1A1A1A;
+}
+.tactile-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #1A1A1A;
+}
+.tactile-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px #1A1A1A !important;
+}
+
+/* ─── Text Shadow ─── */
+.text-shadow-hard {
+  text-shadow: 2px 2px 0px #1A1A1A;
+}
+
+/* ─── SVG Drag Path ─── */
+svg.drag-path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+.path-line {
+  fill: none;
+  stroke: #60a5fa;
+  stroke-width: 16px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+
+/* ─── Animations ─── */
+@keyframes flash-error {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(0.9) sepia(1) hue-rotate(-50deg) saturate(3); background-color: #ffb3b3 !important; }
+}
+.error-flash {
+  animation: flash-error 0.6s ease-in-out;
+}
+
+@keyframes flash-success {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); background-color: #c8ffc8 !important; }
+}
+.success-flash {
+  animation: flash-success 0.4s ease-in-out;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.pop-animation {
+  animation: pop 0.3s ease-in-out;
+}
+
+@keyframes score-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.score-bump {
+  animation: score-bump 0.3s ease-in-out;
+}
+
+/* ─── Responsive Container ─── */
+/* Mobile: full width with margins. Desktop: centered max-width container */
+.app-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 480px;
+    min-height: 100dvh;
+    border-left: 2px solid #1A1A1A;
+    border-right: 2px solid #1A1A1A;
+    background-color: var(--color-surface);
+  }
+}
+
+/* ─── Desktop Bottom Nav ─── */
+@media (min-width: 768px) {
+  .bottom-nav-desktop {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px;
+  }
+}
