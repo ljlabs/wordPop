@@ -10,9 +10,8 @@ import {
   HIGHLIGHT_INVALID_MS,
   HIGHLIGHT_VALID_MS,
   HIGHLIGHT_HINT_MS,
-  type Position,
-  type FoundWord,
 } from '../gameLogic';
+import type { Position, FoundWord } from '../../types';
 
 // ─── Test fixtures ───
 const GRID_4x4 = [
@@ -292,7 +291,7 @@ describe('game flow scenarios', () => {
       { row: 2, col: 2 }, // T
       { row: 1, col: 2 }, // E
     ];
-    const shortResult = validateWord(GRID_4x4, shortTiles, [], MOCK_DICT);
+    validateWord(GRID_4x4, shortTiles, [], MOCK_DICT);
     // "ITE" — not in dictionary, but let's test scoring directly
     expect(scoreWord('ITE')).toBe(1);
     expect(scoreWord('STORE')).toBe(2);
@@ -354,7 +353,6 @@ describe('feedback states', () => {
   it('each result maps to a distinct highlight type', () => {
     // valid → 'valid', duplicate → 'duplicate', too-short/not-in-dict → 'invalid'
     // This ensures duplicate words get yellow, not red
-    const tiles3 = [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }]; // PLA — not in dict
     const tiles4 = [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }]; // PLAY — in MOCK_DICT
     const validResult = validateWord(GRID_4x4, tiles4, emptyFound, MOCK_DICT);
     const dupResult = validateWord(GRID_4x4, tiles4, [{ word: 'PLAY', points: 10 }], MOCK_DICT);

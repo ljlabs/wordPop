@@ -1,16 +1,13 @@
-import type { GridSize, View } from '../types';
+import type { GridSize } from '../types';
+import { useAppStore } from '../stores/appStore';
 import BottomNav from '../components/BottomNav';
-
-interface HomeProps {
-  gridSize: GridSize;
-  onSelectGridSize: (size: GridSize) => void;
-  onPlay: () => void;
-  onNavigate: (view: View) => void;
-}
 
 const GRID_SIZES: GridSize[] = [4, 5, 6];
 
-export default function Home({ gridSize, onSelectGridSize, onPlay, onNavigate }: HomeProps) {
+export default function Home() {
+  const gridSize = useAppStore((s) => s.gridSize);
+  const setGridSize = useAppStore((s) => s.setGridSize);
+  const startGame = useAppStore((s) => s.startGame);
   return (
     <div className="flex flex-col min-h-dvh">
       {/* TopAppBar */}
@@ -50,7 +47,7 @@ export default function Home({ gridSize, onSelectGridSize, onPlay, onNavigate }:
           {/* Play Button */}
           <div className="w-full mb-6">
             <button
-              onClick={onPlay}
+              onClick={startGame}
               className="tactile-btn w-full bg-primary-container text-on-surface rounded-xl py-5 px-8 neubrutalist-shadow-lg font-headline tracking-wide uppercase flex items-center justify-center gap-3"
               style={{ fontSize: 'clamp(24px, 6vw, 32px)' }}
             >
@@ -68,7 +65,7 @@ export default function Home({ gridSize, onSelectGridSize, onPlay, onNavigate }:
                 return (
                   <button
                     key={size}
-                    onClick={() => onSelectGridSize(size)}
+                    onClick={() => setGridSize(size)}
                     className={`tactile-btn flex flex-col items-center justify-center border-2 border-on-surface rounded-xl py-4 px-2 neubrutalist-shadow-sm relative ${
                       isSelected
                         ? 'bg-secondary-container'
@@ -102,7 +99,7 @@ export default function Home({ gridSize, onSelectGridSize, onPlay, onNavigate }:
       </main>
 
       {/* Bottom Nav */}
-      <BottomNav active="play" onNavigate={onNavigate} />
+      <BottomNav active="home" />
     </div>
   );
 }

@@ -1,14 +1,6 @@
 // Game logic — extracted for testability
-
-export interface Position {
-  row: number;
-  col: number;
-}
-
-export interface FoundWord {
-  word: string;
-  points: number;
-}
+import type { Position, FoundWord } from '../types';
+import { getPrefixSet } from './dictionary';
 
 // ─── Highlight durations (ms) ───
 export const HIGHLIGHT_INVALID_MS = 500;
@@ -156,7 +148,7 @@ export function findHintWord(
   const size = grid.length;
   const foundSet = new Set(foundWords.map((w) => w.word));
 
-  let bestHint: HintResult | null = null;
+  const best: { hint: HintResult | null } = { hint: null };
 
   function dfs(
     row: number,
@@ -170,9 +162,9 @@ export function findHintWord(
       if (!foundSet.has(currentWord)) {
         const pts = scoreWord(currentWord);
         // Keep the longest/best word found
-        if (!bestHint || currentWord.length > bestHint.word.length ||
-            (currentWord.length === bestHint.word.length && pts > bestHint.points)) {
-          bestHint = { word: currentWord, points: pts, path: [...path] };
+        if (!best.hint || currentWord.length > best.hint.word.length ||
+            (currentWord.length === best.hint.word.length && pts > best.hint.points)) {
+          best.hint = { word: currentWord, points: pts, path: [...path] };
         }
       }
     }
@@ -188,8 +180,11 @@ export function findHintWord(
         const nc = col + dc;
         const key = `${nr},${nc}`;
         if (nr >= 0 && nr < size && nc >= 0 && nc < size && !visited.has(key)) {
+          const nextWord = currentWord + grid[nr][nc];
+          // Prefix pruning: skip if no dictionary word starts with this prefix.
+          if (!getPrefixSet().has(nextWord.toLowerCase())) continue;
           visited.add(key);
-          dfs(nr, nc, [...path, { row: nr, col: nc }], visited, currentWord + grid[nr][nc]);
+          dfs(nr, nc, [...path, { row: nr, col: nc }], visited, nextWord);
           visited.delete(key);
         }
       }
@@ -203,9 +198,9 @@ export function findHintWord(
       const visited = new Set<string>([key]);
       dfs(r, c, [{ row: r, col: c }], visited, grid[r][c]);
       // Early exit if we found a great word
-      if (bestHint && bestHint.word.length >= 6) return bestHint;
+      if (best.hint && best.hint.word.length >= 6) return best.hint;
     }
   }
 
-  return bestHint;
+  return best.hint;
 }

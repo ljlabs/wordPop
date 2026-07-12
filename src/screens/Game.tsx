@@ -1,171 +1,123 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GridSize, GameResults } from '../types';
-import {
-  type Position,
-  type FoundWord,
-  type HighlightType,
-  HIGHLIGHT_INVALID_MS,
-  HIGHLIGHT_VALID_MS,
-  HIGHLIGHT_HINT_MS,
-  processTileSelection,
-  validateWord,
-  findHintWord,
-} from '../lib/gameLogic';
+import { useEffect, useRef, useCallback } from 'react';
+import { useAppStore } from '../stores/appStore';
+import { useGameSessionStore, HIGHLIGHT_VALID_MS } from '../stores/gameSessionStore';
 
-interface GameProps {
-  gridSize: GridSize;
-  onEndGame: (results: GameResults) => void;
-  onExit: () => void;
-}
+const HIGHLIGHT_INVALID_MS = 500;
+const INACTIVITY_MS = 5000;
 
-// Mock grid data for each size
-const MOCK_GRIDS: Record<number, string[][]> = {
-  4: [
-    ['P', 'L', 'A', 'Y'],
-    ['S', 'T', 'E', 'R'],
-    ['O', 'I', 'T', 'C'],
-    ['D', 'M', 'U', 'H'],
-  ],
-  5: [
-    ['W', 'O', 'R', 'D', 'S'],
-    ['B', 'A', 'C', 'K', 'E'],
-    ['L', 'I', 'G', 'H', 'T'],
-    ['F', 'I', 'R', 'E', 'Y'],
-    ['J', 'U', 'M', 'P', 'S'],
-  ],
-  6: [
-    ['B', 'R', 'I', 'G', 'H', 'T'],
-    ['C', 'L', 'O', 'U', 'D', 'S'],
-    ['F', 'L', 'A', 'M', 'E', 'S'],
-    ['G', 'R', 'A', 'S', 'P', 'S'],
-    ['W', 'I', 'N', 'D', 'Y', 'Z'],
-    ['J', 'U', 'M', 'P', 'E', 'D'],
-  ],
-};
+export default function Game() {
+  // App store: read once, stable selectors.
+  const gridSize = useAppStore((s) => s.gridSize);
+  const goHome = useAppStore((s) => s.goHome);
+  const endGame = useAppStore((s) => s.endGame);
 
-// Mock dictionary — in production this will be the real word list
-// For now, accept common English words so invalid words actually fail
-const MOCK_DICTIONARY = new Set<string>([
-  'play', 'ster', 'oter', 'much', 'dime', 'cute', 'mute',
-  'words', 'bake', 'light', 'fire', 'jump', 'play', 'rest',
-  'store', 'moist', 'ouch', 'cite', 'dime', 'much', 'cute',
-  'mute', 'test', 'best', 'rest', 'jest', 'nest', 'pest',
-  'west', 'zest', 'chest', 'fresh', 'press', 'stern', 'tern',
-]);
+  // Session store: stable action references (Zustand guarantees selector
+  // results are referentially stable when the selected value doesn't change).
+  const start = useGameSessionStore((s) => s.start);
+  const tick = useGameSessionStore((s) => s.tick);
+  const setShowHints = useGameSessionStore((s) => s.setShowHints);
+  const clearHighlight = useGameSessionStore((s) => s.clearHighlight);
+  const hint = useGameSessionStore((s) => s.hint);
+  const buildSessionResults = useGameSessionStore((s) => s.buildResults);
 
-export default function Game({ gridSize, onEndGame, onExit }: GameProps) {
-  const [grid] = useState<string[][]>(() => MOCK_GRIDS[gridSize]);
-  const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(90);
-  const [selectedTiles, setSelectedTiles] = useState<Position[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [foundWords, setFoundWords] = useState<FoundWord[]>([]);
-  const [highlight, setHighlight] = useState<HighlightType>(null);
-  const [highlightedTiles, setHighlightedTiles] = useState<Position[]>([]);
-  const [showHints, setShowHints] = useState(false);
-  const inactivityTimer = useRef<ReturnType<typeof setTimeout>>();
-  const highlightTimer = useRef<ReturnType<typeof setTimeout>>();
+  // Session state — these change every render but are only read, never deps.
+  const status = useGameSessionStore((s) => s.status);
+  const grid = useGameSessionStore((s) => s.grid);
+  const sessionSize = useGameSessionStore((s) => s.gridSize);
+  const score = useGameSessionStore((s) => s.score);
+  const timeLeft = useGameSessionStore((s) => s.timeLeft);
+  const selectedTiles = useGameSessionStore((s) => s.selectedTiles);
+  const isDragging = useGameSessionStore((s) => s.isDragging);
+  const highlight = useGameSessionStore((s) => s.highlight);
+  const highlightedTiles = useGameSessionStore((s) => s.highlightedTiles);
+  const showHints = useGameSessionStore((s) => s.showHints);
+
+  // Stable session actions for pointer callbacks.
+  const pointerDown = useGameSessionStore((s) => s.pointerDown);
+  const pointerEnter = useGameSessionStore((s) => s.pointerEnter);
+  const pointerUp = useGameSessionStore((s) => s.pointerUp);
+
+  const highlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const gridRef = useRef<HTMLDivElement>(null);
   const tileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  // Guards the one-shot end-of-game handoff (endGame mutates appStore, which
+  // would otherwise retrigger this effect and double-record the game).
+  const endedRef = useRef(false);
 
-  // Clear any active highlight after its duration
-  const triggerHighlight = useCallback((type: HighlightType, tiles: Position[], duration: number) => {
-    clearTimeout(highlightTimer.current);
-    setHighlight(type);
-    setHighlightedTiles(tiles);
-    highlightTimer.current = setTimeout(() => {
-      setHighlight(null);
-      setHighlightedTiles([]);
-    }, duration);
-  }, []);
-
-  // Cleanup on unmount
+  // Start a fresh session whenever we mount (Play / Play Again).
   useEffect(() => {
+    start(gridSize);
+    endedRef.current = false;
     return () => {
       clearTimeout(highlightTimer.current);
       clearTimeout(inactivityTimer.current);
     };
-  }, []);
+  }, [start, gridSize]); // `start` is stable from Zustand selector
 
-  // Timer
+  // Countdown — one real timer driving the store's tick().
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onEndGame({
-        score,
-        gridSize,
-        words: foundWords,
-        longestWord: foundWords.reduce((best, w) => w.word.length > best.length ? w.word : best, ''),
-        duration: 90,
-      });
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft((t) => t - 1);
-    }, 1000);
+    if (status !== 'playing') return;
+    const timer = setInterval(() => tick(), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, score, gridSize, foundWords, onEndGame]);
+  }, [status, tick]); // `tick` is stable from Zustand selector
 
-  // Inactivity hints timer
+  // When the round ends, hand results to the app store (records to the
+  // leaderboard). Timed game is abandoned on exit and never resumed.
+  useEffect(() => {
+    if (status === 'ended' && !endedRef.current) {
+      endedRef.current = true;
+      endGame(buildSessionResults());
+    }
+  }, [status, endGame, buildSessionResults]);
+
+  // Clear a flash highlight after its duration.
+  const triggerHighlight = useCallback((duration: number) => {
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => clearHighlight(), duration);
+  }, [clearHighlight]);
+
+  useEffect(() => {
+    if (highlight !== null) {
+      triggerHighlight(highlight === 'valid' ? HIGHLIGHT_VALID_MS : HIGHLIGHT_INVALID_MS);
+    }
+  }, [highlight, triggerHighlight]);
+
+  // Inactivity → reveal the HINTS button after 5s of no input.
   const resetInactivity = useCallback(() => {
     setShowHints(false);
     clearTimeout(inactivityTimer.current);
-    inactivityTimer.current = setTimeout(() => setShowHints(true), 5000);
-  }, []);
+    inactivityTimer.current = setTimeout(() => setShowHints(true), INACTIVITY_MS);
+  }, [setShowHints]);
 
   useEffect(() => {
     resetInactivity();
     return () => clearTimeout(inactivityTimer.current);
   }, [resetInactivity]);
 
-  // Is any highlight active? If so, block new drags
+  // Is a flash highlight active? If so, block new drags.
   const isBlocked = highlight !== null;
 
-  // Handle pointer down on a tile
   const handlePointerDown = (row: number, col: number) => {
     if (isBlocked) return;
     resetInactivity();
-    setIsDragging(true);
-    setSelectedTiles([{ row, col }]);
+    pointerDown(row, col);
   };
 
-  // Handle pointer move over a tile
   const handlePointerEnter = (row: number, col: number) => {
     if (!isDragging || isBlocked) return;
     resetInactivity();
-    setSelectedTiles((prev) => processTileSelection(prev, row, col));
+    pointerEnter(row, col);
   };
 
-  // Handle pointer up — submit word
   const handlePointerUp = () => {
     if (!isDragging || isBlocked) return;
-    setIsDragging(false);
-
-    const validation = validateWord(grid, selectedTiles, foundWords, MOCK_DICTIONARY);
-
-    if (validation.result === 'valid') {
-      setScore((s) => s + validation.points * 10);
-      setFoundWords((w) => [...w, { word: validation.word, points: validation.points * 10 }]);
-      triggerHighlight('valid', selectedTiles, HIGHLIGHT_VALID_MS);
-    } else if (validation.result === 'duplicate') {
-      triggerHighlight('duplicate', selectedTiles, HIGHLIGHT_INVALID_MS);
-    } else {
-      triggerHighlight('invalid', selectedTiles, HIGHLIGHT_INVALID_MS);
-    }
-
-    setTimeout(() => setSelectedTiles([]), 50);
+    pointerUp();
   };
 
-  // Hints button — find a real unfound word, award points, add to found words, and highlight in green like a valid word
   const handleHints = () => {
     if (isBlocked) return;
-    const hint = findHintWord(grid, foundWords, MOCK_DICTIONARY);
-    if (hint) {
-      // Award points and add to found words (same as valid word submission)
-      setScore((s) => s + hint.points * 10);
-      setFoundWords((w) => [...w, { word: hint.word, points: hint.points * 10 }]);
-      // Highlight in green like a valid word
-      triggerHighlight('valid', hint.path, HIGHLIGHT_VALID_MS);
-    }
+    hint();
   };
 
   // Get tile center position for SVG path
@@ -216,7 +168,7 @@ export default function Game({ gridSize, onEndGame, onExit }: GameProps) {
       {/* Header */}
       <header className="flex justify-between items-center w-full px-5 py-4 bg-surface border-b-2 border-on-surface neubrutalist-shadow sticky top-0 z-50">
         <button
-          onClick={onExit}
+          onClick={goHome}
           className="w-10 h-10 flex items-center justify-center bg-surface-bright border-2 border-on-surface rounded-lg neo-shadow active:neo-shadow-pressed transition-all"
         >
           <span className="material-symbols-outlined text-on-surface text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>close</span>
@@ -263,7 +215,7 @@ export default function Game({ gridSize, onEndGame, onExit }: GameProps) {
           {/* Grid */}
           <div
             className="grid gap-2 w-full h-full relative z-20"
-            style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, gridTemplateRows: `repeat(${gridSize}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${sessionSize}, 1fr)`, gridTemplateRows: `repeat(${sessionSize}, 1fr)` }}
           >
             {grid.map((row, r) =>
               row.map((letter, c) => {

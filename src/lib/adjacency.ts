@@ -1,7 +1,4 @@
-export interface Position {
-  row: number;
-  col: number;
-}
+import type { Position } from '../types';
 
 export function isAdjacent(a: Position, b: Position): boolean {
   const dr = Math.abs(a.row - b.row);

@@ -1,5 +1,4 @@
-import { isValidWord } from './dictionary';
-import { scoreWord } from './scoring';
+import { isValidWord, getPrefixSet } from './dictionary';
 
 // Boggle-style letter frequency weights
 // Vowels ~40%, common consonants ~45%, rare (Q/X/Z/J) ~15%
@@ -38,27 +37,33 @@ interface SolverResult {
   words: Set<string>;
 }
 
-// DFS solver to count findable words (3+ letters) on the grid
+// DFS solver to count findable words (3+ letters) on the grid.
+// Uses prefix pruning via getPrefixSet() and caps path depth at 8
+// to keep the solver fast over a full English dictionary.
+const MAX_SOLVER_DEPTH = 8;
+
 function solveGrid(grid: string[][], minWords: number): SolverResult {
   const size = grid.length;
   const found = new Set<string>();
+  const prefixSet = getPrefixSet();
 
   function dfs(
     row: number,
     col: number,
-    path: string,
+    current: string,
     visited: boolean[][]
   ): void {
-    const letter = grid[row][col];
-    const current = path + letter;
-
-    // Prune: if no word in dictionary starts with this prefix, stop
-    // (We can't do trie prefix check cheaply, so just check length)
     if (current.length >= 3 && isValidWord(current)) {
       found.add(current);
     }
 
-    if (found.size >= minWords) return; // Early exit if we have enough
+    if (found.size >= minWords) return;
+
+    // Depth cap: don't explore paths longer than MAX_SOLVER_DEPTH letters.
+    if (current.length >= MAX_SOLVER_DEPTH) return;
+
+    // Prefix pruning: stop if no dictionary word starts with `current`.
+    if (!prefixSet.has(current.toLowerCase())) return;
 
     visited[row][col] = true;
 
@@ -68,7 +73,7 @@ function solveGrid(grid: string[][], minWords: number): SolverResult {
         const nr = row + dr;
         const nc = col + dc;
         if (nr >= 0 && nr < size && nc >= 0 && nc < size && !visited[nr][nc]) {
-          dfs(nr, nc, current, visited);
+          dfs(nr, nc, current + grid[nr][nc], visited);
         }
       }
     }
@@ -80,7 +85,7 @@ function solveGrid(grid: string[][], minWords: number): SolverResult {
     for (let c = 0; c < size; c++) {
       if (found.size >= minWords) break;
       const visited = Array.from({ length: size }, () => Array(size).fill(false));
-      dfs(r, c, '', visited);
+      dfs(r, c, grid[r][c], visited);
     }
     if (found.size >= minWords) break;
   }

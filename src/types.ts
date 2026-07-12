@@ -4,6 +4,11 @@ export interface Tile {
   letter: string;
 }
 
+export interface Position {
+  row: number;
+  col: number;
+}
+
 export interface FoundWord {
   word: string;
   points: number;
@@ -29,4 +34,10 @@ export interface GameResults {
   words: FoundWord[];
   longestWord: string;
   duration: number;
+  /** All words findable on this grid (from the solver). */
+  solutionWords: string[];
+  /** Number of words the player found out of the total possible. */
+  foundCount: number;
+  /** Longest word that was possible on this grid. */
+  longestPossibleWord: string;
 }
