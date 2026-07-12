@@ -111,22 +111,35 @@ export default function Game() {
   };
 
   // Touch drag: on touch devices, onPointerEnter doesn't fire as the finger
-  // moves across elements. We use touchMove + elementFromPoint to detect which
-  // tile is under the finger.
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || isBlocked) return;
-    e.preventDefault();
-    resetInactivity();
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!el) return;
-    const tileEl = el.closest('[data-row][data-col]') as HTMLElement | null;
-    if (tileEl) {
-      const row = parseInt(tileEl.dataset.row!, 10);
-      const col = parseInt(tileEl.dataset.col!, 10);
-      pointerEnter(row, col);
-    }
-  };
+  // moves across elements. We use a native touchmove listener with
+  // { passive: false } (React's synthetic handler is passive by default and
+  // can't call preventDefault) to detect which tile is under the finger.
+  useEffect(() => {
+    const gridEl = gridRef.current;
+    if (!gridEl) return;
+
+    const onMove = (e: TouchEvent) => {
+      // Read live state from the store (not closures) so we never go stale.
+      const { isDragging: dragging, highlight } = useGameSessionStore.getState();
+      if (!dragging || highlight !== null) return;
+
+      resetInactivity();
+
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (!target) return;
+      const tile = target.closest('[data-row][data-col]') as HTMLElement | null;
+      if (tile) {
+        useGameSessionStore.getState().pointerEnter(
+          parseInt(tile.dataset.row!, 10),
+          parseInt(tile.dataset.col!, 10)
+        );
+      }
+    };
+
+    gridEl.addEventListener('touchmove', onMove, { passive: false });
+    return () => gridEl.removeEventListener('touchmove', onMove);
+  }, [gridRef, resetInactivity]); // gridRef never changes; resetInactivity is stable
 
   const handlePointerUp = () => {
     if (!isDragging || isBlocked) return;
@@ -224,7 +237,6 @@ export default function Game() {
           className="relative w-full max-w-[340px] aspect-square bg-surface-container-highest border-2 border-on-surface rounded-xl p-1 neo-shadow-sm"
           onPointerUp={handlePointerUp}
           onPointerLeave={() => { if (isDragging) handlePointerUp(); }}
-          onTouchMove={handleTouchMove}
         >
           {/* SVG Drag Path */}
           <svg className="drag-path" preserveAspectRatio="none" viewBox="0 0 100 100">
